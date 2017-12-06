@@ -1,31 +1,27 @@
+
 sudo: required
-
-services:
-  - docker
-
 language: java
 
 jdk:
   - oraclejdk7
 
-env: 
-  - DOCKER_VERSION=1.6.0 DOCKER_HOST=tcp://127.0.0.1:2375
-  - DOCKER_VERSION=1.6.0 DOCKER_HOST=unix:///var/run/docker.sock
-  - DOCKER_VERSION=1.8.2 DOCKER_HOST=tcp://127.0.0.1:2375
-  - DOCKER_VERSION=1.8.2 DOCKER_HOST=unix:///var/run/docker.sock
 
-before_install:
-  # check what version of docker is installed beforehand
-  - dpkg -l | grep docker
-  # install the version of docker in the DOCKER_VERSION env var
-  - ./.travis.sh install_docker
-  # double-check that the version/config is correct
-  - ./.travis.sh dump_docker_config
-  - docker version
-  - docker info
 
-script: mvn test
+script:
+  - mvn clean cobertura:cobertura -Dtest=DefaultDockerClientTest#testExecInspect -DfailIfNoTests=false
 
-after_success:
-  # test coverage reporting
-  - bash <(curl -s https://codecov.io/bash)
+before_deploy:
+- tar -zcvf coverage-result.tar.gz /home/travis/build/leusonmario/docker-client/target/site/cobertura
+
+deploy:
+  provider: releases
+  api_key:
+    secure: "lSJrTUl2KBGIcO+Zp/HveOBGWETDS9h12UCGrzq+Z/+Q4RVUEdpx1zAlksEW/tqjSXQp2v+iECGp5Jzn7OKYkVAXHp0RNg2/nocBHSrXtV+kFVUacMe/xbJrmxacZ2HKnyecjrJyt4A4VGUaMnRxUGaVEht81YmI9BPZXKdbcFzMECN/4GfSr0d6Vfij/rJWK+H6X19NfBGc/M87vUCfn17E21r/mUtolqo+DSoZOjt8dycFNh1lnTdHFyGua1rMr7QFRMOwBABLTJFUWFathg8wzBmjgmRMyXK8Oo+Cleg2i3E9qslHtT5WP1aq0nBP4AQ7bByVtpa9nupExwbKXgbKqclRD0EkD8soH+iwjyBJRnAz1Jqx+dYUDoE+oSas9XU8EI6P7RmTPjWSxguU3mtSVQvQipkKoE2V0qH9NlwcFZjdU5vVQniyYBpBO24q+k35JorQRMTdXFcVlL2IyUhkwXqesEZkfg+RwAaaaSySrYXBNyJzM9GqHGzq5YeBPKX5MUdnCSUjKuaWichd09m5e1As4MLckgRzXgKvTLGnq4k5pFNAW3MA1sj1KBt2X8L07WaF5nLTRRa7tFPFwQ9gUgTr2IvCU6yRISKQ46OMyZCsm57B4v2X0evyneo/q4M5W18/J/HAPfm/AVSKbbyojPDGb47r6vKVmcls3ZI="
+
+
+  file: coverage-result.tar.gz
+  file_glob: true
+  overwrite: true
+  skip_cleanup: true
+  on:
+    tags: true
